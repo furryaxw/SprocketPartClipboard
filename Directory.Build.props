@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Sprocket's MelonLoader runtime is net6.0; matching the host is intentional. -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+</Project>
