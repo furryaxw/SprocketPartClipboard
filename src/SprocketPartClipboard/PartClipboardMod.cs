@@ -58,9 +58,9 @@ namespace SprocketPartClipboard
             copyAction = input.RegisterAction(new ModActionDefinition
             {
                 ActionId = CopyActionId,
-                DisplayName = "复制部件子树",
+                DisplayName = "Copy Part Subtree",
                 Category = "Part Clipboard",
-                Description = "把设计器里选中的部件连同整棵子树复制到剪贴板。",
+                Description = "Copy the selected part and its whole subtree into the clipboard.",
                 // 修饰键按精确匹配，所以左右 Ctrl 各占一个槽位：`AnyCtrl` 会被解析成"左右都按住"。
                 DefaultPrimary = new KeyChord("<Keyboard>/c", ModifierKeys.LeftCtrl),
                 DefaultSecondary = new KeyChord("<Keyboard>/c", ModifierKeys.RightCtrl),
@@ -71,9 +71,9 @@ namespace SprocketPartClipboard
             pasteAction = input.RegisterAction(new ModActionDefinition
             {
                 ActionId = PasteActionId,
-                DisplayName = "粘贴部件子树",
+                DisplayName = "Paste Part Subtree",
                 Category = "Part Clipboard",
-                Description = "把剪贴板里的子树放进当前设计，随后可以拖动摆放。",
+                Description = "Paste the clipboard subtree into the current design and start drag placement.",
                 DefaultPrimary = new KeyChord("<Keyboard>/v", ModifierKeys.LeftCtrl),
                 DefaultSecondary = new KeyChord("<Keyboard>/v", ModifierKeys.RightCtrl),
                 Contexts = InputContextMask.Designer,
