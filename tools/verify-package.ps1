@@ -40,8 +40,8 @@ $projectText = Get-Content -LiteralPath $projectPath -Raw -Encoding UTF8
 $testProjectText = Get-Content -LiteralPath $testProjectPath -Raw -Encoding UTF8
 $usageText = Get-Content -LiteralPath $usagePath -Raw -Encoding UTF8
 
-Require-True ($projectText.Contains('<Version>0.1.0</Version>')) `
-    'Single-assembly package version is not 0.1.0.'
+Require-True ($projectText.Contains('<Version>0.1.0-fix1</Version>')) `
+    'Single-assembly package version is not 0.1.0-fix1.'
 Require-True ($testProjectText.Contains('src\SprocketPartClipboard\SprocketPartClipboard.csproj')) `
     'Contract tests do not reference the shipping assembly.'
 
@@ -65,6 +65,6 @@ if (Test-Path -LiteralPath $outputDirectory) {
 }
 
 Write-Output (
-    'PASS package=single-assembly version=0.1.0 ' +
+    'PASS package=single-assembly version=0.1.0-fix1 ' +
     'contracts=shipping-assembly docs=usage-complete'
 )

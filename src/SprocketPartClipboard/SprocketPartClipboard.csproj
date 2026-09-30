@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>10.0</LangVersion>
     <PlatformTarget>x64</PlatformTarget>
-    <Version>0.1.0</Version>
+    <Version>0.1.0-fix1</Version>
     <Description>在 Sprocket 载具设计器中复制与粘贴整棵部件子树。</Description>
     <SprocketGameRoot Condition="'$(SprocketGameRoot)' == '' and '$(SPROCKET_GAME_ROOT)' != ''">$(SPROCKET_GAME_ROOT)</SprocketGameRoot>
     <SprocketGameRoot Condition="'$(SprocketGameRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\..\..'))</SprocketGameRoot>

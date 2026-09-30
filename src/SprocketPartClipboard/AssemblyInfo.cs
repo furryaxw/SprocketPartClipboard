@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(SprocketPartClipboard.PartClipboardMod), "Part Clipboard", "0.1.0", "furryAxw")]
+[assembly: MelonInfo(typeof(SprocketPartClipboard.PartClipboardMod), "Part Clipboard", "0.1.0-fix1", "furryAxw")]
 [assembly: MelonGame("HD", "Sprocket")]
 [assembly: MelonAdditionalDependencies("SprocketModAPI")]
 [assembly: AssemblyMetadata("Sprocket.Mod.Id", "furryaxw.sprocket-part-clipboard")]
