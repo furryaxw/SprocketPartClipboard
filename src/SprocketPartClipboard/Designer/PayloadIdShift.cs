@@ -5,26 +5,48 @@ using System.Text.Json.Nodes;
 
 namespace SprocketPartClipboard.Designer
 {
-    // 载荷里的编号分三类，粘贴时必须一起换到目标载具的号段，否则引用会指空或指错：
+    // 载荷里的编号分四类，粘贴时必须一起换到目标载具的号段，否则引用会指空或指错：
     //
     //   部件编号    objects[].vuid / pvuid、*ID 形式的部件引用
     //   组件编号    objects[] 顶层以 ComponentID 为键的整数、以及 *Vuid 形式的组件引用
     //   蓝图编号    blueprints[].id，以及指向它的 *Vuid 字段
     //   网格编号    meshes[].vuid，以及指向它的 *Vuid 字段
     //
-    // **只按键名与复制时记下的精确编号集合判定，绝不按数值大小猜**：
+    // **判定只按键名与精确编号集合，绝不按数值大小猜**：
     //   - 早期按值猜的版本把蓝图里的坐标（y=375）也改了，BeltBlueprint 反序列化直接失败；
-    //   - 早期按"部件编号附近的区间"认组件编号的版本会漏掉离得远的组件
-    //     （实测 gunnerSight 的组件编号离所属部件很远），漏掉就让新部件与既有部件撞号。
-    // 组件编号的键只出现在 objects[] 条目的顶层：
+    //   - 早期按"部件编号之后的窄带"认组件编号的版本会漏掉离得远的组件
+    //     （实测 vuid=285 的部件带着 model=350、vuid=363 带着 model=401），
+    //     漏掉就让新部件与既有部件撞号。
+    // 组件编号的权威来源是载荷自己：objects[] 条目的顶层组件键（值为该组件的编号）——
     //
     //   {"guid":"…","vuid":260,"pvuid":0,"flags":2,"turretRing":261,"basket":262,"structureID":268,…}
+    //
+    // 条目的 ComponentVuids 记录的是同一批编号，取并集是为了早于该字段的条目。
+    //
+    // 键名可以指明号段（`*MeshVuid` / `*BlueprintVuid`），**没有提示的 `*Vuid` 键只能指部件或组件**
+    // ——这两类共用部件号段，所以判定顺序必须是"部件/组件 → 蓝图 → 网格"。
+    // 反过来先问定义号段会认错空间：实测炮塔环一条载荷里
+    // `mantletBlueprint.trunnions_vuid = 300` 的 300 同时是 blueprints[] 里某条定义的 id，
+    // 先问蓝图集合就把它改成定义号段的值，而 `Mantlet.LoadDataInternal` 用它按号取
+    // RotationRangeArea 组件——取不到时该函数落到抛 NullReferenceException 的尾部
+    // （0x1A5A820：trunnionRotationArea / trunnionModel 任一为空就走到 0x180415D90），
+    // 整次粘贴在实例化中途中断。
+    //
+    // 引用也会以**整数数组**的形式出现（键本身没有 Vuid 后缀），元素同样是编号，必须一起改：
+    //   `barrelVuids`（`CannonInstanceBlueprint.BarrelSegmentVUIDs`，炮管段组件的编号）
+    //   `operatedBehaviours`（`CrewSeatBlueprint.OperatedBehaviourIDs`，`VUID[]`）
+    // 漏改的后果是复制件"认领"原车的组件：`CannonBarrelSegment.SetSegmentCount`
+    // （RVA 0x19C6D40）用数组元素在载具里按号解析出**既有**的炮管段，再把它挂到本炮名下
+    // （`segment.parentCannon = 本炮`），于是原车的炮管被粘贴件接管——外观错乱，且 `barrelVuids`
+    // 是定义数据，保存重读后照样复现。
+    // 只认这些键名：网格拓扑数组（`edges` / `faces.v` / `vertices`）与 `paintJobIDs`（颜料序号）
+    // 里的数值与各类编号区间大量重叠，按值改会直接写坏网格。
     public static class PayloadIdShift
     {
-        // 只有条目没记录组件编号时才用到的兜底宽度：组件编号通常紧跟所属部件编号
-        // （实测炮塔环 260→261..264），但**并非总是**如此，所以精确集合才是主路径。
-        private const int ComponentBandWidth = 16;
         private static readonly string[] ObjectStructuralKeys = { "guid", "vuid", "pvuid", "flags", "transform" };
+
+        // 不以 `*Vuid` 命名、但语义是编号列表的键（来自游戏自己的 FileVersion 常量）。
+        private static readonly string[] ReferenceArrayKeys = { "operatedbehaviours" };
 
         public sealed class ShiftResult
         {
@@ -96,24 +118,17 @@ namespace SprocketPartClipboard.Designer
             {
                 foreach (JsonNode? item in objectItems)
                 {
-                    if (item?["vuid"] is JsonValue value && value.TryGetValue(out int id))
+                    if (item is not JsonObject entry)
+                        continue;
+
+                    if (entry["vuid"] is JsonValue value && value.TryGetValue(out int id))
                         objects.Add(id);
+
+                    DeclaredComponents(entry, components);
                 }
             }
 
             HashSet<int> internalReferences = new HashSet<int>();
-
-            // 条目里没有记录组件编号（早于该字段的条目）时退回"部件编号之后的窄带"：
-            // 这个判定只作用于 objects[] 条目的顶层，不会碰到蓝图数据里的数值；
-            // 它可能漏掉离得远的组件，但比完全不偏移好。
-            if (components.Count == 0)
-            {
-                foreach (int objectId in objects)
-                {
-                    for (int step = 1; step <= ComponentBandWidth; step++)
-                        components.Add(objectId + step);
-                }
-            }
 
             // 定义数组里的 id 按各自号段处理；递归到这些条目时要跳过该键，
             // 否则 meshes[].vuid 会被"vuid 规则"再按部件号段偏一次。
@@ -135,7 +150,8 @@ namespace SprocketPartClipboard.Designer
                 foreach (JsonNode? item in definitions)
                 {
                     if (item is JsonObject entry)
-                        ShiftNested(entry, blueprints, meshes, blueprintOffset, meshOffset, objectOffset, "id");
+                        ShiftNested(entry, blueprints, meshes, objects, components,
+                            blueprintOffset, meshOffset, objectOffset, "id");
                 }
             }
 
@@ -144,7 +160,8 @@ namespace SprocketPartClipboard.Designer
                 foreach (JsonNode? item in meshItems)
                 {
                     if (item is JsonObject entry)
-                        ShiftNested(entry, blueprints, meshes, blueprintOffset, meshOffset, objectOffset, "vuid");
+                        ShiftNested(entry, blueprints, meshes, objects, components,
+                            blueprintOffset, meshOffset, objectOffset, "vuid");
                 }
             }
 
@@ -163,6 +180,25 @@ namespace SprocketPartClipboard.Designer
             {
                 if (item is JsonObject map && map[idName] is JsonValue value && value.TryGetValue(out int id))
                     map[idName] = id + offset;
+            }
+        }
+
+        // objects[] 条目顶层以组件标识为键的整数就是该组件的编号；带 *Vuid / *ID 的是引用，不是组件。
+        // 这是组件编号的权威来源：条目的 ComponentVuids 是复制那一刻记下的同一批编号，
+        // 但**早于该字段的条目一个都没有记录**，所以两者取并集。
+        private static void DeclaredComponents(JsonObject entry, HashSet<int> components)
+        {
+            foreach (KeyValuePair<string, JsonNode?> pair in entry)
+            {
+                if (pair.Value is JsonValue value
+                    && value.TryGetValue(out int id)
+                    && id > 0
+                    && !IsStructuralKey(pair.Key)
+                    && !EndsWith(pair.Key, "vuid")
+                    && !EndsWith(pair.Key, "id"))
+                {
+                    components.Add(id);
+                }
             }
         }
 
@@ -197,7 +233,8 @@ namespace SprocketPartClipboard.Designer
                     else if (EndsWith(pair.Key, "vuid"))
                     {
                         // 蓝图与网格编号从 0 开始，0 是合法编号（只有 -1 表示"没有"）。
-                        shifted = ShiftVuid(id, pair.Key, blueprints, meshes, blueprintOffset, meshOffset, objectOffset);
+                        shifted = ShiftVuid(id, pair.Key, blueprints, meshes, objects, components,
+                            blueprintOffset, meshOffset, objectOffset);
                     }
                     else if (EndsWith(pair.Key, "id") && id > 0 && objects.Contains(id))
                     {
@@ -218,7 +255,8 @@ namespace SprocketPartClipboard.Designer
                     }
                 }
 
-                ShiftNested(pair.Value, blueprints, meshes, blueprintOffset, meshOffset, objectOffset, null);
+                ShiftNested(pair.Value, blueprints, meshes, objects, components,
+                    blueprintOffset, meshOffset, objectOffset, null);
             }
 
             Apply(entry, changes);
@@ -229,6 +267,8 @@ namespace SprocketPartClipboard.Designer
             JsonNode node,
             HashSet<int> blueprints,
             HashSet<int> meshes,
+            HashSet<int> objects,
+            HashSet<int> components,
             int blueprintOffset,
             int meshOffset,
             int objectOffset,
@@ -251,7 +291,8 @@ namespace SprocketPartClipboard.Designer
                         {
                             (changes ??= new List<KeyValuePair<string, int>>()).Add(
                                 new KeyValuePair<string, int>(
-                                    pair.Key, ShiftVuid(id, pair.Key, blueprints, meshes, blueprintOffset, meshOffset, objectOffset)));
+                                    pair.Key, ShiftVuid(id, pair.Key, blueprints, meshes, objects, components,
+                                        blueprintOffset, meshOffset, objectOffset)));
                             continue;
                         }
 
@@ -263,7 +304,14 @@ namespace SprocketPartClipboard.Designer
                         }
                     }
 
-                    ShiftNested(pair.Value, blueprints, meshes, blueprintOffset, meshOffset, objectOffset, null);
+                    if (pair.Value is JsonArray references && IsReferenceArrayKey(pair.Key))
+                    {
+                        ShiftReferenceArray(references, pair.Key, blueprintOffset, meshOffset, objectOffset);
+                        continue;
+                    }
+
+                    ShiftNested(pair.Value, blueprints, meshes, objects, components,
+                        blueprintOffset, meshOffset, objectOffset, null);
                 }
 
                 Apply(map, changes);
@@ -275,7 +323,8 @@ namespace SprocketPartClipboard.Designer
                 foreach (JsonNode? item in array)
                 {
                     if (item != null)
-                        ShiftNested(item, blueprints, meshes, blueprintOffset, meshOffset, objectOffset, null);
+                        ShiftNested(item, blueprints, meshes, objects, components,
+                            blueprintOffset, meshOffset, objectOffset, null);
                 }
             }
         }
@@ -285,6 +334,8 @@ namespace SprocketPartClipboard.Designer
             string key,
             HashSet<int> blueprints,
             HashSet<int> meshes,
+            HashSet<int> objects,
+            HashSet<int> components,
             int blueprintOffset,
             int meshOffset,
             int objectOffset)
@@ -296,14 +347,62 @@ namespace SprocketPartClipboard.Designer
             if (key.Contains("blueprint", StringComparison.OrdinalIgnoreCase))
                 return id + blueprintOffset;
 
+            // 没有号段提示的引用只能指部件或组件，两者共用部件号段。先于定义号段判定：
+            // 定义编号与部件/组件编号必然重叠，先问定义集合会把这种引用改到定义号段上去。
+            if (objects.Contains(id) || components.Contains(id))
+                return id + objectOffset;
+
             if (blueprints.Contains(id))
                 return id + blueprintOffset;
 
             if (meshes.Contains(id))
                 return id + meshOffset;
 
-            // 既不是蓝图也不是网格的 vuid 引用：组件编号，跟随部件号段。
+            // 既不是部件、组件、蓝图也不是网格的 vuid 引用：跟随部件号段。
             return id + objectOffset;
+        }
+
+        // 以 `*Vuid` 命名的键本身就是引用；其余只在已知的"编号列表"键上认数组，
+        // 免得把网格拓扑（`edges` / `faces.v`）这类与编号区间重合的数值当引用改掉。
+        private static bool IsReferenceArrayKey(string key)
+        {
+            if (key.Contains("vuid", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            foreach (string candidate in ReferenceArrayKeys)
+            {
+                if (key.Equals(candidate, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        // 数组里的 0 与负数保持原样：0 在部件号段里是载具根对象，不属于任何一次复制。
+        //
+        // 号段由键名定，不再按值判断：这两个键在游戏里就是"组件编号列表"
+        // （`BarrelSegmentVUIDs` / `OperatedBehaviourIDs`），元素值会与蓝图、网格编号撞车
+        // （实测 `operatedBehaviours` 里有一个指向子树之外、恰好等于某条定义编号的组件号），
+        // 按值判会把它改到定义号段上去。指不到目标就让它落空：`SetSegmentCount` 对解析失败
+        // 有"新建默认段"的兜底，比"指到原车组件"安全。
+        private static void ShiftReferenceArray(
+            JsonArray references,
+            string key,
+            int blueprintOffset,
+            int meshOffset,
+            int objectOffset)
+        {
+            int offset = objectOffset;
+            if (key.Contains("mesh", StringComparison.OrdinalIgnoreCase))
+                offset = meshOffset;
+            else if (key.Contains("blueprint", StringComparison.OrdinalIgnoreCase))
+                offset = blueprintOffset;
+
+            for (int index = 0; index < references.Count; index++)
+            {
+                if (references[index] is JsonValue value && value.TryGetValue(out int id) && id > 0)
+                    references[index] = id + offset;
+            }
         }
 
         // 只被蓝图内部整数键（shellID）指向的定义编号（改指后的值）。

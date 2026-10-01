@@ -12,18 +12,42 @@
 1. **抓取**用 `StateContext{State = SpawnStateChange(16)}`。
    复制语义 `DuplicateCopied(8)` 下有些部件的状态根本不写——例如
    `Mantlet.SaveDataInternal` 第一句是 `if (ctx != 1 && ctx != 0x10) return;`，
-   于是炮座的设计数据（`mantletBlueprint`、`layingDriveVuid`、`trunnionsVuid`、`shieldVuid`）缺失。
-2. **编号改指**（`PayloadIdShift`）：四类编号一起换到目标载具的号段，规则按键名与复制时记下的
-   精确集合判定，不按数值大小猜：
+   于是炮座的设计数据（`mantletBlueprint.drive_vuid` / `trunnions_vuid` / `shield_vuid`）缺失。
+2. **编号改指**（`PayloadIdShift`）：四类编号一起换到目标载具的号段，规则按键名与精确编号集合判定，
+   不按数值大小猜：
 
    | 空间 | 载荷位置 | 判定 |
    | --- | --- | --- |
    | 部件 | `objects[].vuid` / `pvuid`、`*ID` 形式的部件引用 | 只偏移正数（`0` 是"无父节点"哨兵） |
-   | 组件 | `objects[]` 顶层以 `ComponentID` 为键的整数 | 落在条目记录的 `ComponentVuids` 集合里才偏移 |
-   | 定义引用 | 以 `Vuid` 结尾的键 | 键名含 `mesh` → 网格段；含 `blueprint` → 蓝图段；否则按值落在哪个集合判定 |
+   | 组件 | `objects[]` 顶层以 `ComponentID` 为键的整数 | 落在组件集合里才偏移；组件集合 = 载荷自己声明的组件键 ∪ 条目记录的 `ComponentVuids` |
+   | 定义引用 | 以 `Vuid` 结尾的键 | 键名含 `mesh` → 网格段；含 `blueprint` → 蓝图段；**其余先按部件/组件判**，再蓝图、再网格 |
    | 定义引用（整数键） | `shellID`（弹药架/炮的蓝图指向弹种槽蓝图） | 蓝图段 |
+   | 引用列表 | `barrelVuids`、`operatedBehaviours`（整数数组） | 元素与标量同号段；号段**只由键名定**，不按值判 |
 
+   **组件集合的来源**：`objects[]` 条目顶层以组件标识为键的整数就是该组件的编号（
+   `{"guid":…,"vuid":260,"pvuid":0,"flags":2,"turretRing":261,…}`），这是权威来源；
+   条目的 `ComponentVuids` 是复制那一刻记下的同一批编号，取并集是为了早于该字段的条目。
+   不用"部件编号之后的窄带"：实测 `vuid=285` 的部件带着 `model=350`、`vuid=363` 带着 `model=401`，
+   离得远的组件会被漏掉，漏掉就与既有部件撞号。
+
+   **判定顺序**：没有号段提示的 `*Vuid` 引用只能指部件或组件，而定义编号从 `0` 起、与部件/组件编号
+   必然重叠，所以必须先判部件/组件。实测炮塔环一条载荷里 `mantletBlueprint.trunnions_vuid = 300`
+   的 `300` 同时是 `blueprints[]` 里某条定义的 id：先问蓝图集合会把它改到定义号段上，
+   `Mantlet.LoadDataInternal`（RVA `0x1A5A820`）用它按号取 `RotationRangeArea` 组件，
+   取不到时该函数落到抛 `NullReferenceException` 的尾部（`trunnionRotationArea` / `trunnionModel`
+   任一为空就走到 `0x180415D90`），整次粘贴在实例化中途中断。
    网格与蓝图编号从 `0` 开始，`0` 是**合法编号**（只有 `-1` 表示"没有"）。
+
+   **引用列表**：引用也会以整数数组的形式出现，键名不带 `Vuid` 后缀——`barrelVuids`
+   （`CannonInstanceBlueprint.BarrelSegmentVUIDs`，炮管段组件号）与 `operatedBehaviours`
+   （`CrewSeatBlueprint.OperatedBehaviourIDs`，`VUID[]`）。漏改的后果是复制件"认领"原车的组件：
+   `CannonBarrelSegment.SetSegmentCount`（RVA `0x19C6D40`）拿数组元素在载具里按号解析出**既有**的
+   炮管段，再把它挂到本炮名下（`segment.parentCannon`），而 `barrelVuids` 是定义数据本身，
+   写档案后重读照样复现——表现为原车的炮管外观错乱、且保存重读不恢复。
+   这两个键的号段**只由键名定**（都是组件号，与部件共用号段），不查编号集合：
+   元素值会与蓝图/网格编号撞车（实测 `operatedBehaviours` 里有一个指向子树之外、
+   恰好等于某条定义编号的组件号）。只认这些键名——网格拓扑数组（`edges` / `faces.v` /
+   `vertices`）与 `paintJobIDs`（颜料序号）里的数值与各类编号区间大量重叠，按值改会写坏网格。
 3. **定义注册**：用**改指后**的那一份定义注册——网格引用（`bodyMeshVuid` 等）写在蓝图定义里，
    用未改指的那份会让定义指向旧网格编号，而网格已注册到新编号。
    - 蓝图：`IBlueprintFactory.Register(Blueprint, int)`

@@ -155,9 +155,10 @@ namespace SprocketPartClipboard.Designer
                 $"已复制 {name}（{objects.Length} 个部件，载荷 {payload.Length} 字符，{check}）；剪贴板共 {library.Entries.Count} 项。");
         }
 
-        // 复制侧把这棵子树里全部组件的 VUID 记进条目。粘贴时要按这个精确集合偏移组件编号：
-        // 组件编号在载荷里以组件标识为键存放，而它并不总是紧挨着所属部件的编号
-        // （实测 gunnerSight 的组件编号离所属部件很远），靠数值区间猜会漏，漏掉就与既有部件撞号。
+        // 复制侧把这棵子树里全部组件的 VUID 记进条目。粘贴时的组件集合是它与"载荷自己声明的
+        // 组件键"的并集（两者是同一批编号，条目记下来是为了早于该字段、载荷里读不到的那些），
+        // 因为组件编号并不总是紧挨着所属部件的编号（实测部件 285 带着组件 model=350），
+        // 靠数值区间猜会漏，漏掉就与既有部件撞号。
         private static List<int> CollectComponentVuids(
             IVehicleGateway gateway,
             Il2CppReferenceArray<VehicleObjectBlueprint> objects)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using SprocketPartClipboard.Clipboard;
 using SprocketPartClipboard.Designer;
@@ -218,6 +219,165 @@ Run("payload id shift only rewrites references to known definitions", () =>
     Require(
         root.GetProperty("blueprints")[2].GetProperty("blueprint").GetProperty("bodyMeshVuid").GetInt32() == 10500,
         "a mesh reference of 0 must follow the mesh id it points at");
+});
+
+// 键名没有号段提示的引用只能指部件或组件；定义编号从 0 起，与部件/组件编号必然重叠。
+// 炮塔环载荷里 `mantletBlueprint.trunnions_vuid` 的 300 同时是 blueprints[] 里一条定义的 id，
+// 先问定义集合就会把它改到定义号段上，粘贴时 Mantlet 按号取不到 RotationRangeArea 组件，
+// 落到抛 NullReferenceException 的尾部、整次粘贴中断。
+Run("a component reference that collides with a definition id follows the component range", () =>
+{
+    const string payload =
+        "{\"v\":\"2.0\"," +
+        "\"blueprints\":[" +
+        "{\"id\":41,\"type\":\"layingDrive\",\"blueprint\":{\"v\":1.0}}," +
+        "{\"id\":9,\"type\":\"structure\",\"blueprint\":{\"v\":1.0,\"bodyMeshVuid\":70}}]," +
+        "\"objects\":[" +
+        "{\"guid\":\"g0\",\"vuid\":260,\"pvuid\":0,\"flags\":2,\"motorBlueprintVuid\":41," +
+        "\"traverseConstraintsVuid\":9," +
+        "\"mantletBlueprint\":{\"drive_vuid\":41,\"trunnions_vuid\":70,\"shield_vuid\":-1}}," +
+        "{\"guid\":\"g1\",\"vuid\":269,\"pvuid\":260,\"flags\":2,\"layingDrive\":41,\"trunnions\":70}]," +
+        "\"meshes\":[{\"vuid\":70,\"type\":\"plateStructureMesh\"}]}";
+
+    // 条目没有记录组件编号：组件集合完全由载荷自己的 objects[] 顶层组件键给出。
+    PayloadIdShift.ShiftResult shiftedResult = PayloadIdShift.Shift(
+        payload,
+        PayloadIdShift.DefinitionIds(payload),
+        PayloadIdShift.MeshIds(payload),
+        Array.Empty<int>(),
+        blueprintOffset: 10000, meshOffset: 10500, objectOffset: 100000);
+
+    using JsonDocument shifted = JsonDocument.Parse(shiftedResult.Payload);
+    JsonElement root = shifted.RootElement;
+    JsonElement mantlet = root.GetProperty("objects")[0];
+    JsonElement trunnions = root.GetProperty("objects")[1];
+    JsonElement state = mantlet.GetProperty("mantletBlueprint");
+
+    Require(
+        state.GetProperty("drive_vuid").GetInt32() == 100041,
+        "a component reference must follow the component range even when a blueprint carries the same id");
+    Require(
+        state.GetProperty("trunnions_vuid").GetInt32() == 100070,
+        "a component reference must follow the component range even when a mesh carries the same id");
+    Require(
+        trunnions.GetProperty("layingDrive").GetInt32() == 100041
+        && trunnions.GetProperty("trunnions").GetInt32() == 100070,
+        "the components a state block refers to must land on the same ids as the components themselves");
+    Require(
+        mantlet.GetProperty("motorBlueprintVuid").GetInt32() == 10041,
+        "a key that names the blueprint range still shifts with the blueprint range");
+    Require(
+        mantlet.GetProperty("traverseConstraintsVuid").GetInt32() == 10009,
+        "a reference that is not a part, a component, a mesh or an object of this payload keeps the definition range");
+    Require(state.GetProperty("shield_vuid").GetInt32() == -1, "the no-shield sentinel must never shift");
+    Require(root.GetProperty("blueprints")[1].GetProperty("blueprint").GetProperty("bodyMeshVuid").GetInt32() == 10570,
+        "a key that names the mesh range still shifts with the mesh range");
+    Require(root.GetProperty("meshes")[0].GetProperty("vuid").GetInt32() == 10570,
+        "the mesh a bodyMeshVuid points at must land on the same id as the mesh itself");
+    Require(root.GetProperty("blueprints")[0].GetProperty("id").GetInt32() == 10041,
+        "definition ids still shift so the objects and the definitions stay consistent");
+});
+
+Run("a recorded component number still decides when the payload declares no component key", () =>
+{
+    const string payload =
+        "{\"blueprints\":[{\"id\":350,\"type\":\"rotationRangeArea\",\"blueprint\":{\"v\":1.0}}]," +
+        "\"objects\":[{\"guid\":\"g0\",\"vuid\":260,\"pvuid\":0,\"flags\":2," +
+        "\"mantletBlueprint\":{\"drive_vuid\":350,\"trunnions_vuid\":-1,\"shield_vuid\":-1}}]," +
+        "\"meshes\":[]}";
+
+    PayloadIdShift.ShiftResult shiftedResult = PayloadIdShift.Shift(
+        payload,
+        PayloadIdShift.DefinitionIds(payload),
+        PayloadIdShift.MeshIds(payload),
+        new[] { 350 },
+        blueprintOffset: 10000, meshOffset: 10500, objectOffset: 100000);
+
+    using JsonDocument shifted = JsonDocument.Parse(shiftedResult.Payload);
+    Require(
+        shifted.RootElement.GetProperty("objects")[0].GetProperty("mantletBlueprint").GetProperty("drive_vuid").GetInt32()
+            == 100350,
+        "a component number recorded at copy time must still decide the range");
+});
+
+// 引用也会以整数数组的形式出现，键名不带 Vuid 后缀。漏改的后果是复制件"认领"原车的组件：
+// `CannonBarrelSegment.SetSegmentCount`（RVA 0x19C6D40）拿 `barrelVuids` 的元素在载具里
+// 按号解析出**既有**的炮管段，再把它挂到本炮名下；`operatedBehaviours` 同理
+// （`CrewSeatBlueprint.OperatedBehaviourIDs`，`VUID[]`）。
+Run("a reference list shifts every element into the component range", () =>
+{
+    const string payload =
+        "{\"v\":\"2.0\"," +
+        "\"blueprints\":[" +
+        "{\"id\":41,\"type\":\"cannonInstance\",\"blueprint\":{\"v\":\"0.2\",\"sightVuid\":435," +
+        "\"linkedCannonVuid\":-1,\"barrelVuids\":[41,70]}}," +
+        "{\"id\":9,\"type\":\"crewSeat\",\"blueprint\":{\"v\":\"0.3\",\"operatedBehaviours\":[9,70]}}]," +
+        "\"objects\":[{\"guid\":\"g0\",\"vuid\":260,\"pvuid\":0,\"flags\":2," +
+        "\"layingDrive\":41,\"trunnions\":70}]," +
+        "\"meshes\":[{\"vuid\":70,\"type\":\"plateStructureMesh\"}]}";
+
+    PayloadIdShift.ShiftResult shiftedResult = PayloadIdShift.Shift(
+        payload,
+        PayloadIdShift.DefinitionIds(payload),
+        PayloadIdShift.MeshIds(payload),
+        Array.Empty<int>(),
+        blueprintOffset: 10000, meshOffset: 10500, objectOffset: 100000);
+
+    using JsonDocument shifted = JsonDocument.Parse(shiftedResult.Payload);
+    JsonElement root = shifted.RootElement;
+    JsonElement cannonInstance = root.GetProperty("blueprints")[0].GetProperty("blueprint");
+    JsonElement crewSeat = root.GetProperty("blueprints")[1].GetProperty("blueprint");
+
+    Require(
+        cannonInstance.GetProperty("barrelVuids")[0].GetInt32() == 100041
+        && cannonInstance.GetProperty("barrelVuids")[1].GetInt32() == 100070,
+        "every barrel segment number must follow the component range, even when a blueprint carries the same id");
+    Require(
+        crewSeat.GetProperty("operatedBehaviours")[0].GetInt32() == 100009
+        && crewSeat.GetProperty("operatedBehaviours")[1].GetInt32() == 100070,
+        "every operated behaviour must follow the component range");
+    Require(
+        cannonInstance.GetProperty("sightVuid").GetInt32() == 100435,
+        "a scalar vuid next to a list still shifts with the part range");
+    Require(
+        cannonInstance.GetProperty("linkedCannonVuid").GetInt32() == -1,
+        "a negative list-free sentinel must never shift");
+});
+
+Run("mesh topology and paint job lists are not reference lists", () =>
+{
+    const string payload =
+        "{\"blueprints\":[{\"id\":20,\"type\":\"paintJobRegister\",\"blueprint\":{\"v\":\"0.0\",\"paintJobIDs\":[1,2]}}]," +
+        "\"objects\":[]," +
+        "\"meshes\":[{\"vuid\":0,\"type\":\"plateStructureMesh\",\"meshData\":{\"v\":1.0," +
+        "\"mesh\":{\"edges\":[0,1,2],\"edgeFlags\":[0],\"faces\":[{\"v\":[0,1,2],\"t\":[2,1,0]}],\"vertices\":[1,2,3]}}}]}";
+
+    PayloadIdShift.ShiftResult shiftedResult = PayloadIdShift.Shift(
+        payload,
+        PayloadIdShift.DefinitionIds(payload),
+        PayloadIdShift.MeshIds(payload),
+        Array.Empty<int>(),
+        blueprintOffset: 10000, meshOffset: 10500, objectOffset: 100000);
+
+    using JsonDocument shifted = JsonDocument.Parse(shiftedResult.Payload);
+    JsonElement root = shifted.RootElement;
+    JsonElement mesh = root.GetProperty("meshes")[0].GetProperty("meshData").GetProperty("mesh");
+
+    Require(
+        string.Join(",", mesh.GetProperty("edges").EnumerateArray().Select(item => item.GetInt32())) == "0,1,2",
+        "mesh edge indices are topology, not references");
+    Require(
+        string.Join(",", mesh.GetProperty("faces")[0].GetProperty("v").EnumerateArray().Select(item => item.GetInt32()))
+            == "0,1,2",
+        "face vertex indices are topology, not references");
+    Require(
+        string.Join(",", mesh.GetProperty("faces")[0].GetProperty("t").EnumerateArray().Select(item => item.GetInt32()))
+            == "2,1,0",
+        "face texture indices are topology, not references");
+    Require(
+        string.Join(",", root.GetProperty("blueprints")[0].GetProperty("blueprint").GetProperty("paintJobIDs")
+            .EnumerateArray().Select(item => item.GetInt32())) == "1,2",
+        "paint job numbers are registry indices, not references");
 });
 
 Run("payload id shift leaves malformed input alone", () =>
