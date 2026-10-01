@@ -268,8 +268,23 @@ namespace SprocketPartClipboard.Designer
             // 这份定义里的 id 与引用已经在 JSON 里改好，所以这里不再叠加偏移。
             int registered = RegisterDefinitions(gateway, local, shifted.InternalReferenceIds, out int meshesRegistered, out int userCounted);
 
-            Il2CppReferenceArray<VehicleObject> created = gateway.ObjectFactory.InstantiateStructured(
-                local.VehicleObjects, parent, FullSaveContext, VehicleInitiationFlags.None);
+            // 部件自己的状态缺键时游戏会在实例化途中抛异常（例如 `Mantlet.LoadDataInternal` 按 VUID
+            // 找回依赖，而载荷里没有那些键），这时它可能已经建出了一部分部件——先清掉再报错，
+            // 免得载具里留下半成品。
+            int before = register.Count;
+            Il2CppReferenceArray<VehicleObject> created;
+            try
+            {
+                created = gateway.ObjectFactory.InstantiateStructured(
+                    local.VehicleObjects, parent, FullSaveContext, VehicleInitiationFlags.None);
+            }
+            catch (Exception exception)
+            {
+                int removed = DiscardPartial(register, before);
+                return ClipboardAction.Fail(
+                    $"粘贴 {entry.Name} 失败：这条剪贴板条目的数据在当前载具里无法还原（{exception.Message}）。"
+                    + $"已清理 {removed} 个半成品部件，重新复制一次再试。");
+            }
 
             if (created == null || created.Length == 0)
                 return ClipboardAction.Fail($"粘贴 {entry.Name} 失败：游戏没有创建任何部件。");
@@ -294,6 +309,35 @@ namespace SprocketPartClipboard.Designer
                 $"已粘贴 {entry.Name}：新建 {created.Length} 个部件（其中 {rootCount} 个作为树根挂到 {anchorName}），"
                 + $"注册蓝图定义 {registered} 条（计入使用 {userCounted} 条）+ 网格 {meshesRegistered} 条，"
                 + $"重建 {rebuilt} 个组件，补炮座耳轴 {trunnions} 处，手持 {how}。");
+        }
+
+        // 实例化中途失败时，注册表里会留下已建出的一部分部件：把这一批销毁掉，别留在载具里。
+        private static int DiscardPartial(VehicleObjectRegister register, int createdBefore)
+        {
+            Il2CppSystem.Collections.Generic.List<VehicleObject>? items =
+                register.Items.TryCast<Il2CppSystem.Collections.Generic.List<VehicleObject>>();
+            if (items == null)
+                return 0;
+
+            int removed = 0;
+            for (int index = items.Count - 1; index >= createdBefore && index >= 0; index--)
+            {
+                try
+                {
+                    VehicleObject item = items[index];
+                    if (item != null && item.Pointer != IntPtr.Zero)
+                    {
+                        register.Destroy(item);
+                        removed++;
+                    }
+                }
+                catch (Exception)
+                {
+                    // 半成品本来就可能销毁失败；失败不升级成新的错误。
+                }
+            }
+
+            return removed;
         }
 
         private static int CountRoots(Il2CppReferenceArray<VehicleObjectBlueprint> objects)
