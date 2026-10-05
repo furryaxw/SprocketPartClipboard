@@ -12,7 +12,7 @@ using UnityEngine.InputSystem;
 
 namespace SprocketPartClipboard
 {
-    [BepInPlugin(PluginGuid, "Part Clipboard", "0.1.1")]
+    [BepInPlugin(PluginGuid, "Part Clipboard", "1.0.0")]
     [BepInDependency("furryaxw.sprocket-mod-api")]
     public sealed class PartClipboardMod : BasePlugin
     {
