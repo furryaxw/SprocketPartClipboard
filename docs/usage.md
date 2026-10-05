@@ -5,8 +5,8 @@
 
 ## 安装
 
-1. 确认 `Mods\SprocketModAPI.dll` 存在（本模组依赖它的按键服务）。
-2. 把 `SprocketPartClipboard.dll` 放进游戏根目录的 `Mods\`。
+1. 确认 `BepInEx\plugins\SprocketModAPI.dll` 存在（本模组依赖它的按键服务）。
+2. 把 `SprocketPartClipboard.dll` 放进 `BepInEx\plugins`。
 3. 启动游戏，日志里应出现 `[PartClipboard] 就绪：剪贴板 N 项，文件 …`。
 
 ## 复制
@@ -57,7 +57,7 @@
 
 ## 排错
 
-日志标签是 `[PartClipboard]`，在 `MelonLoader\Latest.log` 里搜它即可。
+日志标签是 `[PartClipboard]`，在 `BepInEx\LogOutput.log` 里搜它即可。
 
 | 日志 | 含义 |
 | --- | --- |

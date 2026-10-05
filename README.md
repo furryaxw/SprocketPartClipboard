@@ -23,13 +23,13 @@
 
 ## 安装
 
-1. `Mods\` 里已有 MelonLoader net6 与 `SprocketModAPI.dll`（0.3.0 或更高）。
-2. 把 `SprocketPartClipboard.dll` 放进 `Mods\`。
+1. 你已安装 BepInEx 6（IL2CPP），且 `BepInEx\plugins` 里已有 `SprocketModAPI.dll`（1.0.0 或更高）。
+2. 把 `SprocketPartClipboard.dll` 放进 `BepInEx\plugins`。
 
 ## 已知问题
 
 - 黏贴炮塔后弹药架在模拟时被渲染成 1×1×1 的方块。可用的修复：粘贴之后保存并重新读取恢复。（该问题不影响战斗）
-- 报错信息（`Player.log` 或 `MelonLoader\Latest.log`）里若出现
+- 报错信息（`BepInEx\LogOutput.log`）里若出现
   `Plugin VehicleEditorGizmoDrawer threw an exception`，那是游戏编辑器插件在画 gizmo 时被
   空耳轴打断，本模组已尽量在粘贴后补齐该依赖。
 
@@ -47,7 +47,7 @@
   把 `blueprints[]` / `meshes[]` 注册进目标载具（只被蓝图内部整数引用的定义额外计入一次使用）→
   `InstantiateStructured`（`FullSave` 上下文，编号由 `LoadVuids` 装回）→ 组件立脏位并跨帧构建到收敛 →
   补炮座耳轴 → `Reattach` 进入手持摆放。
-- 游戏自带的 `VehicleSubAssemblySerialization` 在 0.2.53.2 里是两个未实现的桩，本项目不使用它。
+- 游戏自带的 `VehicleSubAssemblySerialization` 在 0.2.55.5 里是两个未实现的桩，本项目不使用它。
 
 细节与逆向证据见 [docs/status.md](docs/status.md)，用法见 [docs/usage.md](docs/usage.md)。
 
@@ -61,7 +61,7 @@ dotnet run --configuration Release --project .\tests\SprocketPartClipboard.Contr
 powershell -File .\tools\verify-package.ps1
 ```
 
-默认不写入游戏目录。要部署到 `Mods\` 做游戏内测试，加 `-p:DeployMod=true`。
+默认构建会部署到 `$(SprocketGameRoot)\BepInEx\plugins`；加 `-p:SkipModDeploy=true` 只构建。
 
 ---
 
@@ -95,14 +95,14 @@ Copy and paste a whole part subtree inside the Sprocket vehicle designer.
 
 ## Installation
 
-1. `Mods\` must already contain MelonLoader net6 and `SprocketModAPI.dll` (0.3.0 or newer).
-2. Drop `SprocketPartClipboard.dll` into `Mods\`.
+1. BepInEx 6 (IL2CPP) must be installed and `BepInEx\plugins` must already contain `SprocketModAPI.dll` (1.0.0 or newer).
+2. Drop `SprocketPartClipboard.dll` into `BepInEx\plugins`.
 
 ## Known issues
 
 - After pasting a turret, its ammo rack is rendered as a 1×1×1 cube in the simulation.
   Available workaround: save after pasting and reload the vehicle. (The battle itself is unaffected.)
-- If `Player.log` or `MelonLoader\Latest.log` contains
+- If `BepInEx\LogOutput.log` contains
   `Plugin VehicleEditorGizmoDrawer threw an exception`, the game's editor plugin hit a null trunnion while
   drawing gizmos. This mod tries to fill in that dependency right after pasting.
 
@@ -123,7 +123,7 @@ Copy and paste a whole part subtree inside the Sprocket vehicle designer.
   integer are additionally counted as used) → `InstantiateStructured` (context `FullSave`, ids restored by
   `LoadVuids`) → mark components dirty and build across frames until converged → repair the mantlet
   trunnion → `Reattach` for hand-held placement.
-- The game's `VehicleSubAssemblySerialization` is two unimplemented stubs in 0.2.53.2; this project does not use it.
+- The game's `VehicleSubAssemblySerialization` is two unimplemented stubs in 0.2.55.5; this project does not use it.
 
 Details and reverse-engineering evidence: [docs/status.md](docs/status.md). Usage: [docs/usage.md](docs/usage.md).
 
@@ -137,5 +137,4 @@ dotnet run --configuration Release --project .\tests\SprocketPartClipboard.Contr
 powershell -File .\tools\verify-package.ps1
 ```
 
-Nothing is written into the game directory by default. To deploy into `Mods\` for in-game testing, add
-`-p:DeployMod=true`.
+The build deploys into `$(SprocketGameRoot)\BepInEx\plugins`; add `-p:SkipModDeploy=true` to only build.
