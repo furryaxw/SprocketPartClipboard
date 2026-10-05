@@ -33,7 +33,7 @@ namespace SprocketPartClipboard
             AddComponent<PartClipboardUpdater>().Configure(this);
             Harmony.CreateAndPatchAll(typeof(PartClipboardMod).Assembly, PluginGuid);
 
-            string path = ClipboardLibraryStore.DefaultFilePath(UserDataDirectory());
+            string path = ClipboardLibraryStore.DefaultFilePath(ConfigDirectory());
             ClipboardLibraryStore store = new ClipboardLibraryStore(path);
             ClipboardLoadResult loaded = store.Load();
 
@@ -59,11 +59,10 @@ namespace SprocketPartClipboard
             return true;
         }
 
-        // MelonLoader 的 UserData 目录在 BepInEx 下没有对应项：沿用游戏根目录下的同名目录，
-        // 剪贴板文件位置与文档保持一致。
-        private static string UserDataDirectory()
+        // 剪贴板库住 BepInEx 的配置根目录下，与其它模组数据同一个位置。
+        private static string ConfigDirectory()
         {
-            return Path.Combine(Paths.GameRootPath, "UserData");
+            return Paths.ConfigPath;
         }
 
         private void RegisterActions()

@@ -4,7 +4,7 @@
 
 - `Ctrl+C`：把当前选中部件所在的**整棵子树**（含它自己）序列化成载荷存进剪贴板库。
 - `Ctrl+V`：在当前载具里把该子树还原出来并进入手持摆放（`Reattach`）。
-- 剪贴板跨载具、跨启动保留（`UserData\SprocketPartClipboard\library.json`，原子写 + 容量上限 64）。
+- 剪贴板跨载具、跨启动保留（`BepInEx\config\SprocketPartClipboard\library.json`，原子写 + 容量上限 64）。
 - 键位由 SprocketModAPI 管理（动作 ID `copy-part-tree` / `paste-part-tree`）。
 
 ## 粘贴路径（同车与跨载具共用同一条）

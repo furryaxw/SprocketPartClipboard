@@ -9,7 +9,7 @@
 > - **只在炮塔上做过完整测试**：本项目全部游戏内验证都是围绕炮塔环（`turretRing`）那棵树做的。
 >   复制别的东西**没有得到过同等验证**，可能把载具改坏、也可能写出坏档案。
 > - **复制其它东西之前请先备份存档**。载具设计一旦被写坏，游戏通常没有撤销可用（本模组粘贴也不进撤销栈）。
-> - 剪贴板文件在 `UserData\SprocketPartClipboard\library.json`；它是本模组自己的文件，
+> - 剪贴板文件在 `BepInEx\config\SprocketPartClipboard\library.json`；它是本模组自己的文件，
 >   删掉它只会清空剪贴板，不影响游戏存档。
 >
 > 已知问题与成因见下面的「已知问题」一节的说明。
@@ -18,7 +18,7 @@
 
 - `Ctrl+C`：把设计器里选中的部件、连同它下面整棵子树抓进剪贴板。
 - `Ctrl+V`：把剪贴板里的子树还原到当前载具，挂到选中部件下，并进入拖动摆放。
-- 剪贴板跨载具、跨启动保留：`UserData\SprocketPartClipboard\library.json` 最多保存 64 项，`Ctrl+V` 粘贴最近一次复制的那项。
+- 剪贴板跨载具、跨启动保留：`BepInEx\config\SprocketPartClipboard\library.json` 最多保存 64 项，`Ctrl+V` 粘贴最近一次复制的那项。
 - 键位由 SprocketModAPI 管理，可在游戏内「设置 → Keymapping → MOD KEYBINDINGS」里改。
 
 ## 安装
@@ -78,7 +78,7 @@ Copy and paste a whole part subtree inside the Sprocket vehicle designer.
 >   damage a vehicle or write a broken blueprint.
 > - **Back up your save before copying anything else.** Once a vehicle design is broken there is usually no
 >   undo available (pasting here does not enter the undo stack either).
-> - The clipboard file lives at `UserData\SprocketPartClipboard\library.json`. It belongs to this mod:
+> - The clipboard file lives at `BepInEx\config\SprocketPartClipboard\library.json`. It belongs to this mod:
 >   deleting it only clears the clipboard and does not touch your game saves.
 >
 > See "Known issues" below for the current defect and its workaround.
@@ -89,7 +89,7 @@ Copy and paste a whole part subtree inside the Sprocket vehicle designer.
 - `Ctrl+V`: restore that subtree into the current vehicle, attached under the selected part, and enter
   drag placement.
 - The clipboard persists across vehicles and game restarts:
-  `UserData\SprocketPartClipboard\library.json` holds up to 64 entries, and `Ctrl+V` pastes the most recent one.
+  `BepInEx\config\SprocketPartClipboard\library.json` holds up to 64 entries, and `Ctrl+V` pastes the most recent one.
 - Key bindings are managed by SprocketModAPI and can be changed in-game under
   "Settings → Keymapping → MOD KEYBINDINGS".
 

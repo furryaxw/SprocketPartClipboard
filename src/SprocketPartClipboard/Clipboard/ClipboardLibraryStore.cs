@@ -27,7 +27,7 @@ namespace SprocketPartClipboard.Clipboard
     public sealed class ClipboardLibraryStore
     {
         public const string FileName = "library.json";
-        public const string UserDataFolderName = "SprocketPartClipboard";
+        public const string FolderName = "SprocketPartClipboard";
 
         private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
         {
@@ -46,12 +46,12 @@ namespace SprocketPartClipboard.Clipboard
 
         public string FilePath => filePath;
 
-        public static string DefaultFilePath(string userDataDirectory)
+        public static string DefaultFilePath(string configDirectory)
         {
-            if (string.IsNullOrWhiteSpace(userDataDirectory))
-                throw new ArgumentException("A user data directory is required.", nameof(userDataDirectory));
+            if (string.IsNullOrWhiteSpace(configDirectory))
+                throw new ArgumentException("A config directory is required.", nameof(configDirectory));
 
-            return Path.Combine(userDataDirectory, UserDataFolderName, FileName);
+            return Path.Combine(configDirectory, FolderName, FileName);
         }
 
         public ClipboardLoadResult Load()

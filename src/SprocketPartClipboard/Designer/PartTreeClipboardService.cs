@@ -19,6 +19,10 @@ namespace SprocketPartClipboard.Designer
 {
     internal sealed class ClipboardAction
     {
+        // 失败信息同时进日志：状态行只闪一下就没了，事后无从追查。
+        private static readonly BepInEx.Logging.ManualLogSource Log =
+            BepInEx.Logging.Logger.CreateLogSource("PartClipboard");
+
         private ClipboardAction(bool succeeded, string message)
         {
             Succeeded = succeeded;
@@ -31,7 +35,11 @@ namespace SprocketPartClipboard.Designer
 
         public static ClipboardAction Ok(string message) => new ClipboardAction(true, message);
 
-        public static ClipboardAction Fail(string message) => new ClipboardAction(false, message);
+        public static ClipboardAction Fail(string message)
+        {
+            Log.LogError($"[PartClipboard] {message}");
+            return new ClipboardAction(false, message);
+        }
     }
 
     // 把"设计器里的一棵部件子树"搬进搬出剪贴板库。

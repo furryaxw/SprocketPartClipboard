@@ -46,7 +46,7 @@
 
 ## 剪贴板文件
 
-- 路径：`UserData\SprocketPartClipboard\library.json`
+- 路径：`BepInEx\config\SprocketPartClipboard\library.json`
 - 结构：`SchemaVersion` / `ActiveId` / `Entries[]`，每个条目含 `Id`、`Name`、`CapturedUtc`、`GameVersion`、`SourceVehicle`、`RootPartId`、`PartCount`、`ComponentVuids`、`Payload`。
 - `Payload` 是游戏自己的载具蓝图 JSON 文本，本模组不解释它的内容。
 - `ComponentVuids` 是复制时记下的这棵子树里全部组件的 VUID，粘贴时用它精确偏移组件编号（组件编号在载荷里以组件标识为键存放，且不一定紧挨着所属部件编号）。早于该字段的条目没有它，粘贴侧退回"部件编号之后的窄带"判定。
