@@ -1,9 +1,9 @@
 using System;
-using Il2CppSprocket.VehicleDesigner;
-using Il2CppSprocket.VehicleDesigner.Access;
-using Il2CppSprocket.VehicleDesigner.Operations;
-using Il2CppSprocket.Vehicles;
-using Il2CppSprocket.Vehicles.Selection;
+using Sprocket.VehicleDesigner;
+using Sprocket.VehicleDesigner.Access;
+using Sprocket.VehicleDesigner.Operations;
+using Sprocket.Vehicles;
+using Sprocket.Vehicles.Selection;
 using UnityEngine;
 
 namespace SprocketPartClipboard.Designer

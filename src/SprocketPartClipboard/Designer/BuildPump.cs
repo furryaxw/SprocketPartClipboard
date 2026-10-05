@@ -1,6 +1,6 @@
 using System;
-using Il2CppSprocket.Vehicles;
-using MelonLoader;
+using BepInEx.Logging;
+using Sprocket.Vehicles;
 
 namespace SprocketPartClipboard.Designer
 {
@@ -14,6 +14,9 @@ namespace SprocketPartClipboard.Designer
     internal static class BuildPump
     {
         private const int MaxRounds = 20;
+
+        // 静态工具类没有插件实例：独立日志源，消息仍进 BepInEx 日志。
+        private static readonly ManualLogSource Log = Logger.CreateLogSource("PartClipboard");
 
         private static IVehicleEditGateway? gateway;
         private static int remaining;
@@ -30,7 +33,7 @@ namespace SprocketPartClipboard.Designer
             if (remaining == 0)
                 return;
 
-            MelonLogger.Msg("[PartClipboard] 构建泵已开启（跨帧收敛）");
+            Log.LogInfo("[PartClipboard] 构建泵已开启（跨帧收敛）");
         }
 
         public static void Tick()
@@ -47,14 +50,14 @@ namespace SprocketPartClipboard.Designer
             }
             catch (Exception exception)
             {
-                MelonLogger.Warning($"[PartClipboard] 构建泵失败：{exception.Message}");
+                Log.LogWarning($"[PartClipboard] 构建泵失败：{exception.Message}");
                 remaining = 0;
                 return;
             }
 
             if (last == VehicleDirtyFlags.None || remaining == 0)
             {
-                MelonLogger.Msg($"[PartClipboard] 构建泵结束：{rounds} 轮，末次脏标志 {last}");
+                Log.LogInfo($"[PartClipboard] 构建泵结束：{rounds} 轮，末次脏标志 {last}");
                 remaining = 0;
             }
         }

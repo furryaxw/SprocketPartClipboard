@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
-using Il2CppSprocket;
-using Il2CppSprocket.Blueprints;
-using Il2CppSprocket.VehicleDesigner;
-using Il2CppSprocket.VehicleDesigner.Access;
-using Il2CppSprocket.VehicleDesigner.Operations;
-using Il2CppSprocket.Vehicles;
-using Il2CppSprocket.Vehicles.AttachedBehaviours;
-using Il2CppSprocket.Vehicles.Operations;
-using Il2CppSprocket.Vehicles.Serialization;
-using Il2CppSprocket.Vehicles.VehicleMeshes;
-using Il2CppSprocket.Vehicles.Weapons;
+using Sprocket;
+using Sprocket.Blueprints;
+using Sprocket.VehicleDesigner;
+using Sprocket.VehicleDesigner.Access;
+using Sprocket.VehicleDesigner.Operations;
+using Sprocket.Vehicles;
+using Sprocket.Vehicles.AttachedBehaviours;
+using Sprocket.Vehicles.Operations;
+using Sprocket.Vehicles.Serialization;
+using Sprocket.Vehicles.VehicleMeshes;
+using Sprocket.Vehicles.Weapons;
 using SprocketPartClipboard.Clipboard;
 using UnityEngine;
 
@@ -84,7 +84,7 @@ namespace SprocketPartClipboard.Designer
             }
             catch (Exception exception)
             {
-                // 原生调用抛的是 Il2CppException，接住它比让 MelonLoader 打一堆栈更好定位。
+                // 原生调用抛的是 Il2CppException，接住它比让加载器打一堆栈更好定位。
                 return ClipboardAction.Fail($"复制失败：{exception.GetType().Name}: {exception.Message}");
             }
         }

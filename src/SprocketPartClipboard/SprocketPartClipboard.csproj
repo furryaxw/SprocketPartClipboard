@@ -11,110 +11,121 @@
     <Version>0.1.1</Version>
     <Description>在 Sprocket 载具设计器中复制与粘贴整棵部件子树。</Description>
     <SprocketGameRoot Condition="'$(SprocketGameRoot)' == '' and '$(SPROCKET_GAME_ROOT)' != ''">$(SPROCKET_GAME_ROOT)</SprocketGameRoot>
-    <SprocketGameRoot Condition="'$(SprocketGameRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\..\..'))</SprocketGameRoot>
+    <SprocketGameRoot Condition="'$(SprocketGameRoot)' == ''">G:\Sprocket0.2.55.5</SprocketGameRoot>
+    <BepInExCore>$(SprocketGameRoot)\BepInEx\core</BepInExCore>
+    <GameInterop>$(SprocketGameRoot)\BepInEx\interop</GameInterop>
+    <ModDeployDirectory Condition="'$(ModDeployDirectory)' == ''">$(SprocketGameRoot)\BepInEx\plugins</ModDeployDirectory>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="MelonLoader">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\net6\MelonLoader.dll</HintPath>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCore)\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="0Harmony">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\net6\0Harmony.dll</HintPath>
+    <Reference Include="BepInEx.Core">
+      <HintPath>$(BepInExCore)\BepInEx.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Common">
+      <HintPath>$(BepInExCore)\BepInEx.Unity.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP">
+      <HintPath>$(BepInExCore)\BepInEx.Unity.IL2CPP.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppInterop.Runtime">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\net6\Il2CppInterop.Runtime.dll</HintPath>
+      <HintPath>$(BepInExCore)\Il2CppInterop.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2Cppmscorlib">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2Cppmscorlib.dll</HintPath>
+      <HintPath>$(GameInterop)\Il2Cppmscorlib.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(GameInterop)\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.InputSystem">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Unity.InputSystem.dll</HintPath>
+      <HintPath>$(GameInterop)\Unity.InputSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.Core">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.Core.dll</HintPath>
+    <Reference Include="Sprocket.Core">
+      <HintPath>$(GameInterop)\Sprocket.Core.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.Inputs">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.Inputs.dll</HintPath>
+    <Reference Include="Sprocket.Inputs">
+      <HintPath>$(GameInterop)\Sprocket.Inputs.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.IO">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.IO.dll</HintPath>
+    <Reference Include="Sprocket.IO">
+      <HintPath>$(GameInterop)\Sprocket.IO.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.Operations">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.Operations.dll</HintPath>
+    <Reference Include="Sprocket.Operations">
+      <HintPath>$(GameInterop)\Sprocket.Operations.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.VehicleDesigner">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.VehicleDesigner.dll</HintPath>
+    <Reference Include="Sprocket.VehicleDesigner">
+      <HintPath>$(GameInterop)\Sprocket.VehicleDesigner.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.VehicleDesigner.Access">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.VehicleDesigner.Access.dll</HintPath>
+    <Reference Include="Sprocket.VehicleDesigner.Access">
+      <HintPath>$(GameInterop)\Sprocket.VehicleDesigner.Access.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.VehicleDesigner.PlayerState">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.VehicleDesigner.PlayerState.dll</HintPath>
+    <Reference Include="Sprocket.VehicleDesigner.PlayerState">
+      <HintPath>$(GameInterop)\Sprocket.VehicleDesigner.PlayerState.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.Vehicles">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.Vehicles.dll</HintPath>
+    <Reference Include="Sprocket.Vehicles">
+      <HintPath>$(GameInterop)\Sprocket.Vehicles.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.VehicleFramework">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.VehicleFramework.dll</HintPath>
+    <Reference Include="Sprocket.VehicleFramework">
+      <HintPath>$(GameInterop)\Sprocket.VehicleFramework.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.Blueprints">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.Blueprints.dll</HintPath>
+    <Reference Include="Sprocket.Blueprints">
+      <HintPath>$(GameInterop)\Sprocket.Blueprints.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.Vehicles.Weapons">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.Vehicles.Weapons.dll</HintPath>
+    <Reference Include="Sprocket.Vehicles.Weapons">
+      <HintPath>$(GameInterop)\Sprocket.Vehicles.Weapons.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.WeaponFramework">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.WeaponFramework.dll</HintPath>
+    <Reference Include="Sprocket.WeaponFramework">
+      <HintPath>$(GameInterop)\Sprocket.WeaponFramework.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.AmmoRackDesigner">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.AmmoRackDesigner.dll</HintPath>
+    <Reference Include="Sprocket.AmmoRackDesigner">
+      <HintPath>$(GameInterop)\Sprocket.AmmoRackDesigner.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.LayingDriveDesigner">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.LayingDriveDesigner.dll</HintPath>
+    <Reference Include="Sprocket.LayingDriveDesigner">
+      <HintPath>$(GameInterop)\Sprocket.LayingDriveDesigner.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.Vehicles.Mantlets">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.Vehicles.Mantlets.dll</HintPath>
+    <Reference Include="Sprocket.Vehicles.Mantlets">
+      <HintPath>$(GameInterop)\Sprocket.Vehicles.Mantlets.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.Motors">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.Motors.dll</HintPath>
+    <Reference Include="Sprocket.Motors">
+      <HintPath>$(GameInterop)\Sprocket.Motors.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppSprocket.TurretDesign">
-      <HintPath>$(SprocketGameRoot)\MelonLoader\Il2CppAssemblies\Il2CppSprocket.TurretDesign.dll</HintPath>
+    <Reference Include="Sprocket.TurretDesign">
+      <HintPath>$(GameInterop)\Sprocket.TurretDesign.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="SprocketModAPI">
-      <HintPath>$(SprocketGameRoot)\Mods\SprocketModAPI.dll</HintPath>
+      <HintPath>$(SprocketGameRoot)\BepInEx\plugins\SprocketModAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
 
-  <!-- Deploying into the game directory is deliberate: pass -p:DeployMod=true for an in-game test run. -->
-  <Target Name="DeployMod" AfterTargets="PostBuildEvent" Condition="'$(DeployMod)' == 'true'">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SprocketGameRoot)\Mods" />
+  <!-- 部署到游戏的 BepInEx\plugins；-p:SkipModDeploy=true 时只编译不部署。 -->
+  <Target Name="DeployMod" AfterTargets="PostBuildEvent" Condition="'$(SkipModDeploy)' != 'true'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModDeployDirectory)" />
   </Target>
 </Project>

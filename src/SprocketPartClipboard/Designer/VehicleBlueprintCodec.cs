@@ -1,6 +1,6 @@
 using System;
-using Il2CppSprocket.Vehicles;
-using Il2CppSprocket.Vehicles.Serialization;
+using Sprocket.Vehicles;
+using Sprocket.Vehicles.Serialization;
 
 namespace SprocketPartClipboard.Designer
 {

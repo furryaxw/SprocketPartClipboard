@@ -1,8 +1,8 @@
 using System;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
-using Il2CppSprocket;
-using Il2CppSprocket.Vehicles;
-using Il2CppSprocket.Vehicles.Serialization;
+using Sprocket;
+using Sprocket.Vehicles;
+using Sprocket.Vehicles.Serialization;
 
 namespace SprocketPartClipboard.Designer
 {
